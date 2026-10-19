@@ -1,0 +1,18 @@
+services:
+    # Produkce: API klíč z internetového bankovnictví MONETA (Správa API služby)
+    monetaConfig: Ages\BankGateway\Config\MonetaConfig(
+        apiKey: ''
+        # applicationName: 'Wolfio'           # hlavička application_name (volitelné)
+        # identificationNumber: '12345678'    # hlavička identification_number = IČO (volitelné)
+        # timeout: 30                          # výchozí hodnota
+        # rateLimitRetries: 3                  # výchozí hodnota
+    )
+
+    # Sandbox (předdefinovaná testovací data) – místo apiKey:
+    # monetaConfig: Ages\BankGateway\Config\MonetaConfig(
+    #     clientId: ''
+    #     clientSecret: ''
+    #     sandbox: true
+    # )
+
+    - Ages\BankGateway\BankGateway(monetaConfig: @monetaConfig)
