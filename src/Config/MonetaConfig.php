@@ -2,6 +2,8 @@
 
 namespace Ages\BankGateway\Config;
 
+use Ages\BankGateway\Entity\Enum\Bank;
+
 /**
  * Konfigurace MONETA API (služba VipAISPPayments_v4 – čtení účtů a transakcí).
  *
@@ -10,8 +12,11 @@ namespace Ages\BankGateway\Config;
  *
  * Sandbox: access token se získává přes OAuth2 client_credentials se scope `vip_sandbox`
  * → `sandbox: true` + `clientId` / `clientSecret` aplikace z API portálu.
+ *
+ * API klíč z IB má omezenou platnost a mění se → v NEONu stačí společné nastavení
+ * (applicationName, timeout…) a klíč se doplní za běhu přes withApiKey().
  */
-readonly class MonetaConfig
+readonly class MonetaConfig implements BankConfig
 {
 
     public const string API_URL = 'https://api.moneta.cz';
@@ -40,9 +45,37 @@ readonly class MonetaConfig
     ) {
     }
 
+    public function bank(): Bank
+    {
+        return Bank::Moneta;
+    }
+
+    public function hasCredentials(): bool
+    {
+        return !$this->usesClientCredentials()
+            || ($this->clientId !== null && $this->clientId !== '' && $this->clientSecret !== null && $this->clientSecret !== '');
+    }
+
     public function usesClientCredentials(): bool
     {
         return $this->apiKey === null || $this->apiKey === '';
+    }
+
+    /** Kopie konfigurace s jiným API klíčem (např. načteným z databáze). */
+    public function withApiKey(string $apiKey): self
+    {
+        return new self(
+            apiKey: $apiKey,
+            clientId: $this->clientId,
+            clientSecret: $this->clientSecret,
+            sandbox: $this->sandbox,
+            applicationName: $this->applicationName,
+            identificationNumber: $this->identificationNumber,
+            businessName: $this->businessName,
+            apiUrl: $this->apiUrl,
+            timeout: $this->timeout,
+            rateLimitRetries: $this->rateLimitRetries,
+        );
     }
 
 }

@@ -1,5 +1,7 @@
 services:
-    # Produkce: API klíč z internetového bankovnictví MONETA (Správa API služby)
+    # Produkce: API klíč z internetového bankovnictví MONETA (Správa API služby).
+    # Klíč se pravidelně obnovuje → lze ho vynechat a předávat za běhu:
+    # $bankGateway->connect($bankGateway->config(Bank::Moneta)->withApiKey($keyFromDb))
     monetaConfig: Ages\BankGateway\Config\MonetaConfig(
         apiKey: ''
         # applicationName: 'Wolfio'           # hlavička application_name (volitelné)

@@ -22,7 +22,27 @@ services:
     - Ages\BankGateway\BankGateway(monetaConfig: @monetaConfig)
 ```
 
-Konfigurace banky je **volitelná** — `BankGateway` bez `monetaConfig` normálně nastartuje, chyba (`GatewayInitializationException`) přijde až při `bank(Bank::Moneta)`. Klient se sestaví líně při prvním použití.
+### Konfigurace za běhu (API klíč z databáze)
+
+API klíč z internetového bankovnictví má omezenou platnost a pravidelně se obnovuje → nemusí být v NEONu. V NEONu zůstane jen společné nastavení bez klíče a klíč se doplní za běhu:
+
+```neon
+services:
+    monetaConfig: Ages\BankGateway\Config\MonetaConfig(applicationName: 'Wolfio')
+    - Ages\BankGateway\BankGateway(monetaConfig: @monetaConfig)
+```
+
+```php
+use Ages\BankGateway\Config\MonetaConfig;
+use Ages\BankGateway\Entity\Enum\Bank;
+
+$base = $this->bankGateway->config(Bank::Moneta) ?? new MonetaConfig();   // nastavení z NEONu
+$moneta = $this->bankGateway->connect($base->withApiKey($account->apiKey)); // klíč z DB
+```
+
+`connect()` přijme libovolnou `BankConfig` (každá banka má vlastní config třídu), pro stejnou konfiguraci vrací stejného klienta a bez přihlašovacích údajů vyhodí `GatewayInitializationException`. Obě cesty lze kombinovat – `bank(Bank)` dál používá konfiguraci z DI.
+
+Konfigurace banky je **volitelná** — `BankGateway` bez `monetaConfig` normálně nastartuje, chyba (`GatewayInitializationException`) přijde až při `bank(Bank::Moneta)`. `isConfigured(Bank)` vrací `true`, jen když DI konfigurace obsahuje i přihlašovací údaje. Klient se sestaví líně při prvním použití.
 
 ### MONETA – produkce vs. sandbox
 
@@ -194,6 +214,7 @@ Všechny rozšiřují `Ages\BankGateway\Exception\BankGatewayException`.
 ```
 src/
 ├── Auth/AccessToken.php              OAuth token + expirace (sandbox)
+├── Config/BankConfig.php            rozhraní konfigurace banky (bank(), hasCredentials())
 ├── Config/MonetaConfig.php
 ├── Entity/
 │   ├── Enum/ Bank, TransactionDirection, TransactionStatus, StatementFormat
@@ -207,7 +228,7 @@ src/
 │       ├── MonetaClient.php          HTTP, autorizace, 429 retry, chyby
 │       ├── MonetaMapper.php          JSON → entity, parsování VS/KS/SS
 │       └── MonetaBank.php            VipAISPPayments_v4
-└── BankGateway.php                   DI entry point – bank(Bank) vrátí BankInterface
+└── BankGateway.php                   DI entry point – bank(Bank) / connect(BankConfig) vrátí BankInterface
 ```
 
-Nová banka = nová implementace `BankInterface` v `Gateway/<Banka>/`, případ v enumu `Bank` a config třída.
+Nová banka = nová implementace `BankInterface` v `Gateway/<Banka>/`, případ v enumu `Bank` a config třída implementující `BankConfig` (+ větev v `BankGateway::create()`).
